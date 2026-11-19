@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}{{ page_title }} | Job Tracker{% endblock %}
 {% block content %}
-<section class="form-page-heading"><a class="back-link" href="{{ url_for('jobs') }}">← Jobs</a><p class="eyebrow">JOB DETAILS</p><h1>{{ page_title }}</h1><p class="subheading">Add the posting details and list its skills in the requirements JSON.</p></section>
+<section class="form-page-heading"><a class="back-link" href="{{ url_for('jobs') }}">← Jobs</a><p class="eyebrow">JOB DETAILS</p><h1>{{ page_title }}</h1><p class="subheading">Add the posting details and list the skills for Job Match.</p></section>
 {% if not companies %}<div class="notice notice-warning">You need to <a href="{{ url_for('company_new') }}">add a company</a> before you can create a job.</div>{% endif %}
 <form class="panel form-panel" method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -14,13 +14,16 @@
         <label class="field">Maximum salary (USD)<input type="number" name="salary_max" min="0" step="1" value="{{ job.get('salary_max', '') if job.get('salary_max') is not none else '' }}" placeholder="90000"></label>
         <label class="field field-full">Job posting URL<input type="url" name="job_url" maxlength="300" value="{{ job.get('job_url', '') or '' }}" placeholder="https://company.com/careers/job-id"></label>
         <label class="field field-full">Job description<textarea name="job_description" rows="4" placeholder="Optional summary of the role">{{ job.get('job_description', '') or '' }}</textarea></label>
-        <label class="field field-full">Requirements (JSON)<textarea class="code-input" name="requirements" rows="12" spellcheck="false" placeholder='{
-  "required_skills": ["Python", "SQL", "Flask"],
-  "preferred_skills": ["Docker", "AWS"],
-  "education": "Bachelor degree",
-  "experience_years": 1,
-  "remote_option": true
-}'>{{ job.get('requirements')|json_pretty }}</textarea><small>Use <code>required_skills</code> and <code>preferred_skills</code> arrays for Job Match. Leave blank if the posting does not list skills.</small></label>
+        <h2 class="field-full">Requirements</h2>
+        <label class="field">Required skills<input type="text" name="required_skills" value="{{ details.get('required_skills', '') }}" placeholder="Python, SQL, Flask"><small>Separate skills with commas.</small></label>
+        <label class="field">Preferred skills<input type="text" name="preferred_skills" value="{{ details.get('preferred_skills', '') }}" placeholder="Docker, AWS"><small>Separate skills with commas.</small></label>
+        <label class="field">Education<input type="text" name="education" value="{{ details.get('education', '') }}" placeholder="e.g. Bachelor degree"></label>
+        <label class="field">Years of experience<input type="number" name="experience_years" min="0" step="1" value="{{ details.get('experience_years', '') }}"></label>
+        <label class="field">Remote option<select name="remote_option">
+            <option value="">Not specified</option>
+            <option value="yes" {% if details.get('remote_option') == 'yes' %}selected{% endif %}>Yes</option>
+            <option value="no" {% if details.get('remote_option') == 'no' %}selected{% endif %}>No</option>
+        </select></label>
         <label class="checkbox-field field-full"><input type="checkbox" name="is_active" {% if job.get('is_active', 1) %}checked{% endif %}> This job is active and should appear in Job Match</label>
     </div>
     <div class="form-actions"><a class="button button-secondary" href="{{ url_for('jobs') }}">Cancel</a><button class="button button-primary" type="submit" {% if not companies %}disabled{% endif %}>Save job</button></div>

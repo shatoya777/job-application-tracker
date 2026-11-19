@@ -95,19 +95,91 @@ def _optional_datetime(value: str | None, label: str) -> datetime | None:
     except ValueError as exc:
         raise ValueError(f"{label} must be a valid date and time.") from exc
 
-def _json_object(value: str | None, label: str) -> str | None:
-    """Validate a JSON object and return a JSON string suitable for MySQL."""
-    value = (value or "").strip()
-    if not value:
-        return None
-    try:
-        parsed = json.loads(value)
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"{label} must contain valid JSON.") from exc
-    if not isinstance(parsed, dict):
-        raise ValueError(f"{label} must be a JSON object (start with {{ and end with }}).")
-    return json.dumps(parsed, ensure_ascii=False)
+REQUIREMENT_FIELDS = {
+    "required_skills": ("Required skills", "comma"),
+    "preferred_skills": ("Preferred skills", "comma"),
+    "education": ("Education", "line"),
+    "experience_years": ("Years of experience", "number"),
+    "remote_option": ("Remote option", "boolean"),
+}
+INTERVIEW_FIELDS = {
+    "interview_rounds": ("Interview rounds", "number"),
+    "interviewers": ("Interviewers", "comma"),
+    "technical_questions": ("Technical questions", "lines"),
+    "feedback": ("Feedback", "text"),
+    "next_steps": ("Next steps", "text"),
+}
 
+
+def _decode_details(value):
+    # MySQL Connector normally returns JSON columns as strings.
+    return json.loads(value) if isinstance(value, (str, bytes, bytearray)) else value
+
+
+def _detail_input(value, kind):
+    if kind == "boolean" and isinstance(value, bool):
+        return "yes" if value else "no"
+    if kind == "number" and type(value) is int and value >= 0:
+        return str(value)
+    if kind in ("comma", "lines") and isinstance(value, list):
+        separator = ", " if kind == "comma" else "\n"
+        return separator.join(str(item) for item in value if isinstance(item, (str, int, float)))
+    if kind in ("text", "line") and isinstance(value, str):
+        return value
+    return ""
+
+
+def _detail_form_values(record, column, fields):
+    data = _decode_details(record.get(column))
+    data = data if isinstance(data, dict) else {}
+    return {key: _detail_input(data.get(key), kind) for key, (_, kind) in fields.items()}
+
+
+def _save_details(form, original, fields):
+    """Update only edited form fields and preserve all other stored properties."""
+    data = _decode_details(original)
+    updated = dict(data) if isinstance(data, dict) else {}
+    for key, (label, kind) in fields.items():
+        if key not in form:
+            continue
+        submitted = form[key].replace("\r\n", "\n").replace("\r", "\n")
+        previous = _detail_input(updated.get(key), kind).replace("\r\n", "\n").replace("\r", "\n")
+        # Browsers remove line breaks from single-line text inputs.
+        if kind in ("comma", "line"):
+            previous = previous.replace("\n", "")
+        if submitted == previous:
+            continue
+        if data is not None and not isinstance(data, dict):
+            raise ValueError("The saved details use a legacy format. They can be viewed on the detail page.")
+        value = submitted.strip()
+        if not value:
+            updated.pop(key, None)
+        elif kind == "number":
+            updated[key] = _optional_int(value, label)
+        elif kind == "boolean":
+            if value not in ("yes", "no"):
+                raise ValueError(f"Select a valid value for {label.lower()}.")
+            updated[key] = value == "yes"
+        elif kind in ("comma", "lines"):
+            separator = "," if kind == "comma" else "\n"
+            updated[key] = [item.strip() for item in value.split(separator) if item.strip()]
+        else:
+            updated[key] = value
+    if isinstance(data, dict):
+        return json.dumps(updated, ensure_ascii=False)
+    if updated:
+        return json.dumps(updated, ensure_ascii=False)
+    # Preserve legacy non-object JSON and the distinction between JSON null and SQL NULL.
+    return original if isinstance(original, str) or original is None else json.dumps(data, ensure_ascii=False)
+
+
+def _detail_rows(value, fields):
+    data = _decode_details(value)
+    if isinstance(data, dict):
+        rows = [(label, data[key]) for key, (label, _) in fields.items() if key in data]
+        rows.extend((key.replace("_", " ").capitalize(), item) for key, item in data.items() if key not in fields)
+        return rows
+    return [("Saved details", data)] if data is not None else []
 
 
 def create_app() -> Flask:
@@ -131,17 +203,6 @@ def create_app() -> Flask:
         if isinstance(value, str):
             return value[:16]
         return value.strftime("%Y-%m-%dT%H:%M")
-
-    @app.template_filter("json_pretty")
-    def json_pretty(value: Any) -> str:
-        if value is None:
-            return ""
-        if isinstance(value, str):
-            try:
-                value = json.loads(value)
-            except json.JSONDecodeError:
-                return value
-        return json.dumps(value, indent=2, ensure_ascii=False)
 
     @app.template_filter("money")
     def money(value: Any) -> str:
@@ -319,9 +380,10 @@ def create_app() -> Flask:
             "SELECT application_id, application_date, status FROM applications WHERE job_id = %s ORDER BY application_date DESC",
             (job_id,),
         )
-        return render_template("job_detail.html", job=job, applications=related_applications)
+        return render_template("job_detail.html", job=job, applications=related_applications,
+                               detail_rows=_detail_rows(job["requirements"], REQUIREMENT_FIELDS))
 
-    def save_job(form, job_id: int | None = None):
+    def save_job(form, job_id: int | None = None, existing_requirements=None):
         company_id = _required_int(form.get("company_id"), "Company")
         job_title = _required_text(form.get("job_title"), "Job title", 100)
         job_type = _optional_text(form.get("job_type"))
@@ -333,7 +395,7 @@ def create_app() -> Flask:
             raise ValueError("Minimum salary cannot be greater than maximum salary.")
         date_posted = _optional_date(form.get("date_posted"), "Date posted")
         job_url = _optional_url(form.get("job_url"), "Job URL", 300)
-        requirements = _json_object(form.get("requirements"), "Requirements")
+        requirements = _save_details(form, existing_requirements, REQUIREMENT_FIELDS)
         job_description = _optional_text(form.get("job_description"))
         is_active = 1 if form.get("is_active") == "on" else 0
 
@@ -368,8 +430,8 @@ def create_app() -> Flask:
                 return redirect(url_for("jobs"))
             except ValueError as error:
                 flash(str(error), "error")
-                return render_template("job_form.html", job=request.form, companies=companies_list, page_title="Add job")
-        return render_template("job_form.html", job={"is_active": 1}, companies=companies_list, page_title="Add job")
+                return render_template("job_form.html", job=request.form, details=request.form, companies=companies_list, page_title="Add job")
+        return render_template("job_form.html", job={"is_active": 1}, details={}, companies=companies_list, page_title="Add job")
 
     @app.route("/jobs/<int:job_id>/edit", methods=["GET", "POST"])
     def job_edit(job_id: int):
@@ -379,13 +441,14 @@ def create_app() -> Flask:
         companies_list = database.fetch_all("SELECT company_id, company_name FROM companies ORDER BY company_name")
         if request.method == "POST":
             try:
-                save_job(request.form, job_id)
+                save_job(request.form, job_id, job["requirements"])
                 flash("Job updated successfully.", "success")
                 return redirect(url_for("jobs"))
             except ValueError as error:
                 flash(str(error), "error")
-                return render_template("job_form.html", job=request.form, companies=companies_list, page_title="Edit job")
-        return render_template("job_form.html", job=job, companies=companies_list, page_title="Edit job")
+                return render_template("job_form.html", job=request.form, details=request.form, companies=companies_list, page_title="Edit job")
+        return render_template("job_form.html", job=job, companies=companies_list, page_title="Edit job",
+                               details=_detail_form_values(job, "requirements", REQUIREMENT_FIELDS))
 
     @app.post("/jobs/<int:job_id>/delete")
     def job_delete(job_id: int):
@@ -422,9 +485,10 @@ def create_app() -> Flask:
         )
         if not application:
             abort(404)
-        return render_template("application_detail.html", application=application)
+        return render_template("application_detail.html", application=application,
+                               detail_rows=_detail_rows(application["interview_data"], INTERVIEW_FIELDS))
 
-    def save_application(form, application_id: int | None = None):
+    def save_application(form, application_id: int | None = None, existing_interview_data=None):
         job_id = _required_int(form.get("job_id"), "Job")
         application_date = _optional_date(form.get("application_date"), "Application date")
         if application_date is None:
@@ -437,7 +501,7 @@ def create_app() -> Flask:
         response_date = _optional_date(form.get("response_date"), "Response date")
         interview_date = _optional_datetime(form.get("interview_date"), "Interview date")
         notes = _optional_text(form.get("notes"))
-        interview_data = _json_object(form.get("interview_data"), "Interview data")
+        interview_data = _save_details(form, existing_interview_data, INTERVIEW_FIELDS)
         values = (
             job_id, application_date, status, resume_version, cover_letter_sent,
             response_date, interview_date, notes, interview_data,
@@ -471,12 +535,13 @@ def create_app() -> Flask:
                 return redirect(url_for("applications"))
             except ValueError as error:
                 flash(str(error), "error")
-                return render_template("application_form.html", application=request.form, jobs=jobs_list, page_title="Add application")
+                return render_template("application_form.html", application=request.form, details=request.form, jobs=jobs_list, page_title="Add application")
         return render_template(
             "application_form.html",
             application={"application_date": date.today().isoformat(), "status": "Applied"},
             jobs=jobs_list,
             page_title="Add application",
+            details={},
         )
 
     @app.route("/applications/<int:application_id>/edit", methods=["GET", "POST"])
@@ -489,13 +554,14 @@ def create_app() -> Flask:
         )
         if request.method == "POST":
             try:
-                save_application(request.form, application_id)
+                save_application(request.form, application_id, application["interview_data"])
                 flash("Application updated successfully.", "success")
                 return redirect(url_for("applications"))
             except ValueError as error:
                 flash(str(error), "error")
-                return render_template("application_form.html", application=request.form, jobs=jobs_list, page_title="Edit application")
-        return render_template("application_form.html", application=application, jobs=jobs_list, page_title="Edit application")
+                return render_template("application_form.html", application=request.form, details=request.form, jobs=jobs_list, page_title="Edit application")
+        return render_template("application_form.html", application=application, jobs=jobs_list, page_title="Edit application",
+                               details=_detail_form_values(application, "interview_data", INTERVIEW_FIELDS))
 
     @app.post("/applications/<int:application_id>/delete")
     def application_delete(application_id: int):

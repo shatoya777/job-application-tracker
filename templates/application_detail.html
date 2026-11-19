@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'detail_values.html' import show_details %}
 {% block title %}Application #{{ application.application_id }} | Job Tracker{% endblock %}
 {% block content %}
 <section class="form-page-heading"><a class="back-link" href="{{ url_for('applications') }}">← Applications</a><p class="eyebrow">APPLICATION RECORD</p><h1>{{ application.job_title }}</h1><p class="subheading"><a class="text-link" href="{{ url_for('company_detail', company_id=application.company_id) }}">{{ application.company_name }}</a></p></section>
@@ -14,6 +15,10 @@
             <div><dt>Notes</dt><dd class="preserve-lines">{{ application.notes or '—' }}</dd></div>
         </dl>
     </section>
-    <section class="panel detail-panel"><h2>Interview data (JSON)</h2>{% if application.interview_data %}<pre class="json-display">{{ application.interview_data|json_pretty }}</pre>{% else %}<p class="muted-text">No interview data has been added.</p>{% endif %}</section>
+    <section class="panel detail-panel">
+        <h2>Interview details</h2>
+        {% if detail_rows %}{{ show_details(detail_rows) }}
+        {% else %}<p class="muted-text">No interview details have been added.</p>{% endif %}
+    </section>
 </div>
 {% endblock %}

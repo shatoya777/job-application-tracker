@@ -14,13 +14,15 @@
         <label class="field">Interview date and time<input type="datetime-local" name="interview_date" value="{{ application.get('interview_date')|datetime_input }}"></label>
         <label class="checkbox-field field-full"><input type="checkbox" name="cover_letter_sent" {% if application.get('cover_letter_sent') %}checked{% endif %}> Cover letter sent</label>
         <label class="field field-full">Notes<textarea name="notes" rows="4" placeholder="Follow-ups, recruiter conversations, or reminders">{{ application.get('notes', '') or '' }}</textarea></label>
-        <label class="field field-full">Interview data (JSON)<textarea class="code-input" name="interview_data" rows="10" spellcheck="false" placeholder='{
-  "interview_rounds": 1,
-  "interviewers": ["Recruiter name"],
-  "technical_questions": [],
-  "feedback": "",
-  "next_steps": ""
-}'>{{ application.get('interview_data')|json_pretty }}</textarea><small>Optional flexible interview notes stored in the MySQL JSON column.</small></label>
+        <h2 class="field-full">Interview details</h2>
+        <label class="field">Interview rounds<input type="number" name="interview_rounds" min="0" step="1" value="{{ details.get('interview_rounds', '') }}"></label>
+        <label class="field">Interviewers<input type="text" name="interviewers" value="{{ details.get('interviewers', '') }}" placeholder="e.g. Jordan Lee, Sam Patel"><small>Separate names with commas.</small></label>
+        <label class="field field-full">Technical questions<textarea name="technical_questions" rows="3">
+{{ details.get('technical_questions', '') }}</textarea><small>Enter one question per line.</small></label>
+        <label class="field field-full">Feedback<textarea name="feedback" rows="3">
+{{ details.get('feedback', '') }}</textarea></label>
+        <label class="field field-full">Next steps<textarea name="next_steps" rows="3">
+{{ details.get('next_steps', '') }}</textarea></label>
     </div>
     <div class="form-actions"><a class="button button-secondary" href="{{ url_for('applications') }}">Cancel</a><button class="button button-primary" type="submit" {% if not jobs %}disabled{% endif %}>Save application</button></div>
 </form>

@@ -12,6 +12,7 @@
 4. How to implement a Job Match feature that compares user-entered skills with skills stored in the jobs requirements JSON column and ranks active jobs by match percentage.
 5. Review the setup instructions, migration approach, and tests, and help make the project easier to install and run.
 6. Explain why the Actions column was misaligned and suggest a CSS refinement that would not change the application's functionality.
+7. Replace the JSON textareas on the Jobs and Applications forms with labeled fields, preserve saved properties, and verify detail pages and Job Match.
 
 ## What Worked Well
 

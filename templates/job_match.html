@@ -32,13 +32,13 @@
                     <div><span class="skill-label">Missing</span><div class="skill-tags">{% for skill in job.missing_skills %}<span class="skill-tag missing">{{ skill }}</span>{% else %}<span class="muted-text">None</span>{% endfor %}</div></div>
                 </div>
                 {% if job.preferred_matches and job.scoring_label == 'Required skills' %}<p class="preferred-note">Also matches preferred skills: {{ job.preferred_matches|join(', ') }}</p>{% endif %}
-            {% else %}<p class="muted-text">This job does not have required_skills or preferred_skills in its requirements JSON.</p>{% endif %}
+            {% else %}<p class="muted-text">This job has no required or preferred skills listed.</p>{% endif %}
             <div class="match-footer"><span>{{ job.job_type or 'Job type not specified' }}{% if job.salary_min or job.salary_max %} · {{ job.salary_min|money }} – {{ job.salary_max|money }}{% endif %}</span>{% if job.job_url %}<a class="text-link" href="{{ job.job_url }}" target="_blank" rel="noopener noreferrer">Open posting ↗</a>{% endif %}</div>
         </article>
     {% endfor %}
     </div>
 {% elif searched %}
-    <div class="empty-state panel"><strong>No active jobs found</strong><p>Add active jobs to your tracker and include <code>required_skills</code> in their requirements JSON.</p><a class="text-link" href="{{ url_for('job_new') }}">Add a job →</a></div>
+    <div class="empty-state panel"><strong>No active jobs found</strong><p>Add active jobs to your tracker and fill in their required or preferred skills.</p><a class="text-link" href="{{ url_for('job_new') }}">Add a job →</a></div>
 {% else %}
     <section class="match-tip"><strong>How the score works</strong><p>The percentage is the number of your skills that match the job's listed scoring skills, divided by the total number of scoring skills. Required skills are used first. If a job has no required skills, its preferred skills are used instead. Jobs without either list are shown without a percentage.</p></section>
 {% endif %}

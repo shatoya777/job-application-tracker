@@ -1,0 +1,23 @@
+{% macro show_value(value) -%}
+    {%- if value is mapping and value -%}
+        <dl>{% for key, item in value.items() %}<dt>{{ key|replace('_', ' ')|capitalize }}</dt><dd>{{ show_value(item) }}</dd>{% endfor %}</dl>
+    {%- elif value is sequence and value is not string and value -%}
+        <ul>{% for item in value %}<li>{{ show_value(item) }}</li>{% endfor %}</ul>
+    {%- elif value is sameas true -%}
+        Yes
+    {%- elif value is sameas false -%}
+        No
+    {%- elif value is none or value == '' or value == [] or value == {} -%}
+        &mdash;
+    {%- else -%}
+        {{ value }}
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro show_details(rows) %}
+    <dl class="detail-list">
+        {% for label, value in rows %}
+        <div><dt>{{ label }}</dt><dd class="preserve-lines">{{ show_value(value) }}</dd></div>
+        {% endfor %}
+    </dl>
+{% endmacro %}
