@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Applications | Job Tracker{% endblock %}
+{% block content %}
+<section class="page-heading">
+    <div><p class="eyebrow">YOUR PIPELINE</p><h1>Applications</h1><p class="subheading">Track the roles you've applied to and each step in the process.</p></div>
+    <a class="button button-primary" href="{{ url_for('application_new') }}">＋ Add application</a>
+</section>
+<section class="panel">
+    {% if applications %}
+    <div class="table-wrap"><table>
+        <thead><tr><th>Position</th><th>Company</th><th>Applied</th><th>Status</th><th>Cover letter</th><th>Interview</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for item in applications %}
+            <tr>
+                <td class="primary-cell"><a href="{{ url_for('application_detail', application_id=item.application_id) }}">{{ item.job_title }}</a></td><td>{{ item.company_name }}</td><td>{{ item.application_date }}</td>
+                <td><span class="status-pill status-{{ item.status|lower|replace(' ', '-') }}">{{ item.status }}</span></td>
+                <td>{{ 'Yes' if item.cover_letter_sent else 'No' }}</td><td>{{ item.interview_date or '—' }}</td>
+                <td class="actions-cell"><div class="actions-wrap"><a class="action-link" href="{{ url_for('application_edit', application_id=item.application_id) }}">Edit</a>
+                    <form method="post" action="{{ url_for('application_delete', application_id=item.application_id) }}" onsubmit="return confirm('Delete this application?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="action-link danger-link" type="submit">Delete</button>
+                    </form></div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table></div>
+    {% else %}<div class="empty-state"><strong>No applications yet</strong><p>When you apply to a job, add it here to track its progress.</p><a class="button button-primary" href="{{ url_for('application_new') }}">Add application</a></div>{% endif %}
+</section>
+{% endblock %}

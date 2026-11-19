@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }} | Job Tracker{% endblock %}
+{% block content %}
+<section class="form-page-heading"><a class="back-link" href="{{ url_for('contacts') }}">← Contacts</a><p class="eyebrow">CONTACT DETAILS</p><h1>{{ page_title }}</h1><p class="subheading">Save contact information associated with a company.</p></section>
+{% if not companies %}<div class="notice notice-warning">You need to <a href="{{ url_for('company_new') }}">add a company</a> before you can create a contact.</div>{% endif %}
+<form class="panel form-panel" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-grid">
+        <label class="field field-full">Company <span class="required">*</span><select name="company_id" required><option value="">Select a company</option>{% for company in companies %}<option value="{{ company.company_id }}" {% if contact.get('company_id')|string == company.company_id|string %}selected{% endif %}>{{ company.company_name }}</option>{% endfor %}</select></label>
+        <label class="field">Contact name <span class="required">*</span><input type="text" name="contact_name" maxlength="100" required value="{{ contact.get('contact_name', '') }}" placeholder="e.g. Jordan Smith"></label>
+        <label class="field">Title<input type="text" name="title" maxlength="100" value="{{ contact.get('title', '') or '' }}" placeholder="e.g. Technical Recruiter"></label>
+        <label class="field">Email<input type="email" name="email" maxlength="100" value="{{ contact.get('email', '') or '' }}"></label>
+        <label class="field">Phone<input type="tel" name="phone" maxlength="20" value="{{ contact.get('phone', '') or '' }}"></label>
+        <label class="field field-full">LinkedIn URL<input type="url" name="linkedin_url" maxlength="200" value="{{ contact.get('linkedin_url', '') or '' }}" placeholder="https://www.linkedin.com/in/..."></label>
+        <label class="field field-full">Notes<textarea name="notes" rows="4" placeholder="Where you met, conversation details, or follow-up reminders">{{ contact.get('notes', '') or '' }}</textarea></label>
+    </div>
+    <div class="form-actions"><a class="button button-secondary" href="{{ url_for('contacts') }}">Cancel</a><button class="button button-primary" type="submit" {% if not companies %}disabled{% endif %}>Save contact</button></div>
+</form>
+{% endblock %}

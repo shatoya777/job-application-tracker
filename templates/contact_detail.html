@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}{{ contact.contact_name }} | Job Tracker{% endblock %}
+{% block content %}
+<section class="form-page-heading"><a class="back-link" href="{{ url_for('contacts') }}">← Contacts</a><p class="eyebrow">CONTACT PROFILE</p><h1>{{ contact.contact_name }}</h1><p class="subheading">{{ contact.title or 'Title not specified' }} · <a class="text-link" href="{{ url_for('company_detail', company_id=contact.company_id) }}">{{ contact.company_name }}</a></p></section>
+<section class="panel detail-panel detail-single"><div class="section-heading"><h2>Contact information</h2><a class="action-link" href="{{ url_for('contact_edit', contact_id=contact.contact_id) }}">Edit</a></div>
+    <dl class="detail-list">
+        <div><dt>Company</dt><dd><a class="text-link" href="{{ url_for('company_detail', company_id=contact.company_id) }}">{{ contact.company_name }}</a></dd></div>
+        <div><dt>Title</dt><dd>{{ contact.title or '—' }}</dd></div>
+        <div><dt>Email</dt><dd>{% if contact.email %}<a class="text-link" href="mailto:{{ contact.email }}">{{ contact.email }}</a>{% else %}—{% endif %}</dd></div>
+        <div><dt>Phone</dt><dd>{{ contact.phone or '—' }}</dd></div>
+        <div><dt>LinkedIn</dt><dd>{% if contact.linkedin_url %}<a class="text-link" href="{{ contact.linkedin_url if contact.linkedin_url.startswith('http') else 'https://' ~ contact.linkedin_url }}" target="_blank" rel="noopener noreferrer">Open LinkedIn profile ↗</a>{% else %}—{% endif %}</dd></div>
+        <div><dt>Notes</dt><dd class="preserve-lines">{{ contact.notes or '—' }}</dd></div>
+    </dl>
+</section>
+{% endblock %}

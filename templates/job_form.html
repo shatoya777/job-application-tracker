@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }} | Job Tracker{% endblock %}
+{% block content %}
+<section class="form-page-heading"><a class="back-link" href="{{ url_for('jobs') }}">← Jobs</a><p class="eyebrow">JOB DETAILS</p><h1>{{ page_title }}</h1><p class="subheading">Add the posting details and list its skills in the requirements JSON.</p></section>
+{% if not companies %}<div class="notice notice-warning">You need to <a href="{{ url_for('company_new') }}">add a company</a> before you can create a job.</div>{% endif %}
+<form class="panel form-panel" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-grid">
+        <label class="field field-full">Company <span class="required">*</span><select name="company_id" required><option value="">Select a company</option>{% for company in companies %}<option value="{{ company.company_id }}" {% if job.get('company_id')|string == company.company_id|string %}selected{% endif %}>{{ company.company_name }}</option>{% endfor %}</select></label>
+        <label class="field field-full">Job title <span class="required">*</span><input type="text" name="job_title" maxlength="100" required value="{{ job.get('job_title', '') }}" placeholder="e.g. Software Developer"></label>
+        <label class="field">Job type<select name="job_type"><option value="">Select type</option>{% for kind in job_types %}<option value="{{ kind }}" {% if job.get('job_type') == kind %}selected{% endif %}>{{ kind }}</option>{% endfor %}</select></label>
+        <label class="field">Date posted<input type="date" name="date_posted" value="{{ job.get('date_posted')|date_input }}"></label>
+        <label class="field">Minimum salary (USD)<input type="number" name="salary_min" min="0" step="1" value="{{ job.get('salary_min', '') if job.get('salary_min') is not none else '' }}" placeholder="70000"></label>
+        <label class="field">Maximum salary (USD)<input type="number" name="salary_max" min="0" step="1" value="{{ job.get('salary_max', '') if job.get('salary_max') is not none else '' }}" placeholder="90000"></label>
+        <label class="field field-full">Job posting URL<input type="url" name="job_url" maxlength="300" value="{{ job.get('job_url', '') or '' }}" placeholder="https://company.com/careers/job-id"></label>
+        <label class="field field-full">Job description<textarea name="job_description" rows="4" placeholder="Optional summary of the role">{{ job.get('job_description', '') or '' }}</textarea></label>
+        <label class="field field-full">Requirements (JSON)<textarea class="code-input" name="requirements" rows="12" spellcheck="false" placeholder='{
+  "required_skills": ["Python", "SQL", "Flask"],
+  "preferred_skills": ["Docker", "AWS"],
+  "education": "Bachelor degree",
+  "experience_years": 1,
+  "remote_option": true
+}'>{{ job.get('requirements')|json_pretty }}</textarea><small>Use <code>required_skills</code> and <code>preferred_skills</code> arrays for Job Match. Leave blank if the posting does not list skills.</small></label>
+        <label class="checkbox-field field-full"><input type="checkbox" name="is_active" {% if job.get('is_active', 1) %}checked{% endif %}> This job is active and should appear in Job Match</label>
+    </div>
+    <div class="form-actions"><a class="button button-secondary" href="{{ url_for('jobs') }}">Cancel</a><button class="button button-primary" type="submit" {% if not companies %}disabled{% endif %}>Save job</button></div>
+</form>
+{% endblock %}

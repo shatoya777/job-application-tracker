@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Jobs | Job Tracker{% endblock %}
+{% block content %}
+<section class="page-heading">
+    <div><p class="eyebrow">OPPORTUNITIES</p><h1>Jobs</h1><p class="subheading">Save job postings, salary ranges, and the skills each role requires.</p></div>
+    <a class="button button-primary" href="{{ url_for('job_new') }}">＋ Add job</a>
+</section>
+<section class="panel">
+    {% if jobs %}
+    <div class="table-wrap"><table>
+        <thead><tr><th>Position</th><th>Company</th><th>Type</th><th>Salary range</th><th>Posted</th><th>Applications</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for job in jobs %}
+            <tr>
+                <td><div class="primary-cell"><a href="{{ url_for('job_detail', job_id=job.job_id) }}">{{ job.job_title }}</a></div>{% if job.job_url %}<a class="muted-link" target="_blank" rel="noopener noreferrer" href="{{ job.job_url }}">View posting ↗</a>{% endif %}</td>
+                <td>{{ job.company_name }}</td><td>{{ job.job_type or '—' }}</td>
+                <td>{% if job.salary_min is not none or job.salary_max is not none %}{{ job.salary_min|money }} – {{ job.salary_max|money }}{% else %}Not provided{% endif %}</td>
+                <td>{{ job.date_posted or '—' }}</td><td>{{ job.application_count }}</td>
+                <td><span class="status-pill {{ 'status-active' if job.is_active else 'status-inactive' }}">{{ 'Active' if job.is_active else 'Inactive' }}</span></td>
+                <td class="actions-cell"><div class="actions-wrap"><a class="action-link" href="{{ url_for('job_edit', job_id=job.job_id) }}">Edit</a>
+                    <form method="post" action="{{ url_for('job_delete', job_id=job.job_id) }}" onsubmit="return confirm('Delete this job? Jobs with applications cannot be deleted.');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="action-link danger-link" type="submit">Delete</button>
+                    </form></div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table></div>
+    {% else %}<div class="empty-state"><strong>No jobs added</strong><p>Add a job and its skills to use the Job Match feature.</p><a class="button button-primary" href="{{ url_for('job_new') }}">Add job</a></div>{% endif %}
+</section>
+{% endblock %}

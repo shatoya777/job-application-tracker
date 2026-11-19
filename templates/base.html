@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Job Application Tracker{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="{{ url_for('dashboard') }}">
+            <span>Job Application Tracker</span>
+        </a>
+        <nav class="main-nav" aria-label="Main navigation">
+            <a class="{% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a class="{% if request.endpoint in ['companies', 'company_detail', 'company_new', 'company_edit'] %}active{% endif %}" href="{{ url_for('companies') }}">Companies</a>
+            <a class="{% if request.endpoint in ['jobs', 'job_detail', 'job_new', 'job_edit'] %}active{% endif %}" href="{{ url_for('jobs') }}">Jobs</a>
+            <a class="{% if request.endpoint in ['applications', 'application_detail', 'application_new', 'application_edit'] %}active{% endif %}" href="{{ url_for('applications') }}">Applications</a>
+            <a class="{% if request.endpoint in ['contacts', 'contact_detail', 'contact_new', 'contact_edit'] %}active{% endif %}" href="{{ url_for('contacts') }}">Contacts</a>
+            <a class="{% if request.endpoint == 'job_match' %}active{% endif %}" href="{{ url_for('job_match') }}">Job Match</a>
+        </nav>
+    </header>
+
+    <main class="page-shell">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-stack" aria-live="polite">
+                    {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+        <footer class="site-footer">Job Application Tracker</footer>
+    </main>
+</body>
+</html>

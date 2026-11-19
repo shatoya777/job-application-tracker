@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }} | Job Tracker{% endblock %}
+{% block content %}
+<section class="form-page-heading"><a class="back-link" href="{{ url_for('companies') }}">← Companies</a><p class="eyebrow">COMPANY DETAILS</p><h1>{{ page_title }}</h1><p class="subheading">Store the organization's basic information.</p></section>
+<form class="panel form-panel" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-grid">
+        <label class="field field-full">Company name <span class="required">*</span><input type="text" name="company_name" maxlength="100" required value="{{ company.get('company_name', '') }}" placeholder="e.g. Acme Technologies"></label>
+        <label class="field">Industry<input type="text" name="industry" maxlength="50" value="{{ company.get('industry', '') or '' }}" placeholder="e.g. Software"></label>
+        <label class="field">Website<input type="text" name="website" maxlength="200" value="{{ company.get('website', '') or '' }}" placeholder="https://example.com"></label>
+        <label class="field">City<input type="text" name="city" maxlength="50" value="{{ company.get('city', '') or '' }}"></label>
+        <label class="field">State<input type="text" name="state" maxlength="50" value="{{ company.get('state', '') or '' }}"></label>
+        <label class="field field-full">Notes<textarea name="notes" rows="4" placeholder="Any useful company details">{{ company.get('notes', '') or '' }}</textarea></label>
+    </div>
+    <div class="form-actions"><a class="button button-secondary" href="{{ url_for('companies') }}">Cancel</a><button class="button button-primary" type="submit">Save company</button></div>
+</form>
+{% endblock %}

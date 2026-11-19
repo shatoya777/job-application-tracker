@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Contacts | Job Tracker{% endblock %}
+{% block content %}
+<section class="page-heading">
+    <div><p class="eyebrow">PEOPLE & CONNECTIONS</p><h1>Contacts</h1><p class="subheading">Remember recruiters, hiring managers, and other company contacts.</p></div>
+    <a class="button button-primary" href="{{ url_for('contact_new') }}">＋ Add contact</a>
+</section>
+<section class="panel">
+    {% if contacts %}
+    <div class="table-wrap"><table>
+        <thead><tr><th>Contact</th><th>Company</th><th>Title</th><th>Email</th><th>Phone</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for contact in contacts %}
+            <tr>
+                <td class="primary-cell"><a href="{{ url_for('contact_detail', contact_id=contact.contact_id) }}">{{ contact.contact_name }}</a></td><td>{{ contact.company_name }}</td><td>{{ contact.title or '—' }}</td>
+                <td>{% if contact.email %}<a class="muted-link" href="mailto:{{ contact.email }}">{{ contact.email }}</a>{% else %}—{% endif %}</td>
+                <td>{{ contact.phone or '—' }}</td>
+                <td class="actions-cell"><div class="actions-wrap"><a class="action-link" href="{{ url_for('contact_edit', contact_id=contact.contact_id) }}">Edit</a>
+                    <form method="post" action="{{ url_for('contact_delete', contact_id=contact.contact_id) }}" onsubmit="return confirm('Delete this contact?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="action-link danger-link" type="submit">Delete</button>
+                    </form></div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table></div>
+    {% else %}<div class="empty-state"><strong>No contacts added</strong><p>Save the people you connect with at each company.</p><a class="button button-primary" href="{{ url_for('contact_new') }}">Add contact</a></div>{% endif %}
+</section>
+{% endblock %}

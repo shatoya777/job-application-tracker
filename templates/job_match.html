@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Job Match | Job Tracker{% endblock %}
+{% block content %}
+<section class="page-heading">
+    <div><p class="eyebrow">SKILLS COMPARISON</p><h1>Find your job matches</h1><p class="subheading">Enter your skills and compare them with the requirements saved for active jobs.</p></div>
+</section>
+<section class="panel match-search-panel">
+    <form method="post" class="match-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="field" for="skills">Your skills</label>
+        <textarea id="skills" name="skills" rows="3" placeholder="Python, SQL, Flask, JavaScript, Git" required>{{ skills_text }}</textarea>
+        <small>Separate skills with commas, semicolons, or new lines. Matching ignores capitalization but uses exact skill names.</small>
+        <div class="form-actions"><button class="button button-primary" type="submit">Calculate matches</button></div>
+    </form>
+</section>
+{% if searched and matches %}
+    <section class="results-heading"><div><p class="eyebrow">RESULTS</p><h2>Jobs ranked by skill match</h2></div><span class="result-count">{{ matches|length }} active jobs checked</span></section>
+    <div class="match-list">
+    {% for job in matches %}
+        <article class="panel match-card">
+            <div class="match-main">
+                <div class="match-title"><h3>{{ job.job_title }}</h3><p>{{ job.company_name }}{% if job.city or job.state %} · {{ [job.city, job.state]|select|join(', ') }}{% endif %}</p></div>
+                {% if job.match_percentage is not none %}
+                    <div class="match-score"><strong>{{ job.match_percentage }}%</strong><span>skill match</span></div>
+                {% else %}<div class="match-score no-score"><strong>—</strong><span>No skill data</span></div>{% endif %}
+            </div>
+            {% if job.match_percentage is not none %}
+                <div class="progress-track"><div class="progress-fill" style="width: {{ job.match_percentage }}%"></div></div>
+                <p class="match-basis">Scored using {{ job.scoring_label|lower }} · {{ job.matched_skills|length }} of {{ job.skills_count }} matched</p>
+                <div class="skill-columns">
+                    <div><span class="skill-label">Matched</span><div class="skill-tags">{% for skill in job.matched_skills %}<span class="skill-tag matched">{{ skill }}</span>{% else %}<span class="muted-text">None yet</span>{% endfor %}</div></div>
+                    <div><span class="skill-label">Missing</span><div class="skill-tags">{% for skill in job.missing_skills %}<span class="skill-tag missing">{{ skill }}</span>{% else %}<span class="muted-text">None</span>{% endfor %}</div></div>
+                </div>
+                {% if job.preferred_matches and job.scoring_label == 'Required skills' %}<p class="preferred-note">Also matches preferred skills: {{ job.preferred_matches|join(', ') }}</p>{% endif %}
+            {% else %}<p class="muted-text">This job does not have required_skills or preferred_skills in its requirements JSON.</p>{% endif %}
+            <div class="match-footer"><span>{{ job.job_type or 'Job type not specified' }}{% if job.salary_min or job.salary_max %} · {{ job.salary_min|money }} – {{ job.salary_max|money }}{% endif %}</span>{% if job.job_url %}<a class="text-link" href="{{ job.job_url }}" target="_blank" rel="noopener noreferrer">Open posting ↗</a>{% endif %}</div>
+        </article>
+    {% endfor %}
+    </div>
+{% elif searched %}
+    <div class="empty-state panel"><strong>No active jobs found</strong><p>Add active jobs to your tracker and include <code>required_skills</code> in their requirements JSON.</p><a class="text-link" href="{{ url_for('job_new') }}">Add a job →</a></div>
+{% else %}
+    <section class="match-tip"><strong>How the score works</strong><p>The percentage is the number of your skills that match the job's listed scoring skills, divided by the total number of scoring skills. Required skills are used first. If a job has no required skills, its preferred skills are used instead. Jobs without either list are shown without a percentage.</p></section>
+{% endif %}
+{% endblock %}

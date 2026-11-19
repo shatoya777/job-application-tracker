@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}{{ job.job_title }} | Job Tracker{% endblock %}
+{% block content %}
+<section class="form-page-heading"><a class="back-link" href="{{ url_for('jobs') }}">← Jobs</a><p class="eyebrow">JOB POSTING</p><h1>{{ job.job_title }}</h1><p class="subheading"><a class="text-link" href="{{ url_for('company_detail', company_id=job.company_id) }}">{{ job.company_name }}</a> · {{ job.job_type or 'Type not specified' }}</p></section>
+<div class="detail-grid">
+    <section class="panel detail-panel"><div class="section-heading"><h2>Job information</h2><a class="action-link" href="{{ url_for('job_edit', job_id=job.job_id) }}">Edit</a></div>
+        <dl class="detail-list">
+            <div><dt>Salary range</dt><dd>{{ job.salary_min|money }} – {{ job.salary_max|money }}</dd></div>
+            <div><dt>Date posted</dt><dd>{{ job.date_posted or '—' }}</dd></div>
+            <div><dt>Posting</dt><dd>{% if job.job_url %}<a class="text-link" href="{{ job.job_url }}" target="_blank" rel="noopener noreferrer">Open job posting ↗</a>{% else %}—{% endif %}</dd></div>
+            <div><dt>Status</dt><dd><span class="status-pill {{ 'status-active' if job.is_active else 'status-inactive' }}">{{ 'Active' if job.is_active else 'Inactive' }}</span></dd></div>
+            <div><dt>Description</dt><dd class="preserve-lines">{{ job.job_description or '—' }}</dd></div>
+        </dl>
+    </section>
+    <section class="panel detail-panel"><h2>Requirements (JSON)</h2>{% if job.requirements %}<pre class="json-display">{{ job.requirements|json_pretty }}</pre>{% else %}<p class="muted-text">No requirements JSON has been added.</p>{% endif %}</section>
+    <section class="panel detail-panel"><div class="section-heading"><h2>Applications</h2><a class="action-link" href="{{ url_for('application_new') }}">Add application</a></div>
+        {% if applications %}<div class="related-list">{% for item in applications %}<a href="{{ url_for('application_detail', application_id=item.application_id) }}"><span><strong>{{ item.application_date }}</strong><small>Application #{{ item.application_id }}</small></span><span class="status-pill status-{{ item.status|lower|replace(' ', '-') }}">{{ item.status }}</span></a>{% endfor %}</div>{% else %}<p class="muted-text">No applications recorded for this job.</p>{% endif %}
+    </section>
+</div>
+{% endblock %}
